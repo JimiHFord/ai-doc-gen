@@ -63,6 +63,14 @@ agents:
       The output will be directly written to a file without any processing.
       This file should be easily readable by AI (will be used by AI agents only).
 
+      ---
+      {% if repo_structure %}
+      ## Repository Structure
+      ```markdown
+      {{ repo_structure }}
+      ```
+      {% endif %}
+
   data_flow_analyzer:
     system_prompt: >
       [DataFlowAnalyzer] You are a data flow specialist who tracks how data moves, transforms, and persists throughout an application.
@@ -125,6 +133,14 @@ agents:
       The output will be directly written to a file without any processing.
       This file should be easily readable by AI (will be used by AI agents only).
 
+      ---
+      {% if repo_structure %}
+      ## Repository Structure
+      ```markdown
+      {{ repo_structure }}
+      ```
+      {% endif %}
+
   dependency_analyzer:
     system_prompt: >
       [DependencyAnalyzer] You are a dependency and integration specialist who maps the relationships between internal components
@@ -185,6 +201,14 @@ agents:
       Fill in each section with appropriate content but maintain this exact markdown structure.
       The output will be directly written to a file without any processing.
       This file should be easily readable by AI (will be used by AI agents only).
+
+      ---
+      {% if repo_structure %}
+      ## Repository Structure
+      ```markdown
+      {{ repo_structure }}
+      ```
+      {% endif %}
 
   request_flow_analyzer:
     system_prompt: >
@@ -247,6 +271,14 @@ agents:
       Fill in each section with appropriate content but maintain this exact markdown structure.
       The output will be directly written to a file without any processing.
       This file should be easily readable by AI (will be used by AI agents only).
+
+      ---
+      {% if repo_structure %}
+      ## Repository Structure
+      ```markdown
+      {{ repo_structure }}
+      ```
+      {% endif %}
 
   api_analyzer:
     system_prompt: >
@@ -328,3 +360,11 @@ agents:
       Fill in each section with appropriate content.
       The output will be directly written to a file without any processing.
       This file should be easily readable by AI (will be used by AI agents only).
+
+      ---
+      {% if repo_structure %}
+      ## Repository Structure
+      ```markdown
+      {{ repo_structure }}
+      ```
+      {% endif %}

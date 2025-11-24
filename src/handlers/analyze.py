@@ -29,6 +29,7 @@ class AnalyzeHandler(BaseHandler):
                     "exclude_data_flow": self.config.exclude_data_flow,
                     "exclude_dependencies": self.config.exclude_dependencies,
                     "exclude_request_flow": self.config.exclude_request_flow,
+                    "max_workers": self.config.max_workers,
                     "input": str(self.config.repo_path),
                 }
             )

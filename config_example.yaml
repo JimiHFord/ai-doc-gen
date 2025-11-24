@@ -8,6 +8,8 @@ analyzer:
   exclude_dependencies: false
   exclude_request_flow: false
   exclude_api_analysis: false
+  # Worker pool configuration
+  max_workers: 0  # Maximum concurrent analyzer agents (0=auto-detect CPU count)
 
 # Generator configuration options
 generate:

@@ -1,5 +1,5 @@
-import asyncio
 import time
+from functools import partial
 from pathlib import Path
 from typing import List, Tuple
 
@@ -13,7 +13,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.settings import ModelSettings
 
 import config
-from utils import Logger, PromptManager, create_retrying_client
+from utils import Logger, PromptManager, WorkerPool, create_retrying_client
 
 from .tools import FileReadTool, ListFilesTool
 
@@ -25,6 +25,7 @@ class AnalyzerAgentConfig(BaseModel):
     exclude_dependencies: bool = Field(default=False, description="Exclude dependencies analysis")
     exclude_request_flow: bool = Field(default=False, description="Exclude request flow analysis")
     exclude_api_analysis: bool = Field(default=False, description="Exclude api analysis")
+    max_workers: int = Field(default=0, description="Maximum concurrent workers (0=auto-detect CPU count)")
 
 
 class AnalyzerAgent:
@@ -48,61 +49,72 @@ class AnalyzerAgent:
         Logger.info("Starting analyzer agent")
 
         analysis_files = []
-        agent_tasks = {}
+        agent_tasks = {}  # Dict preserves insertion order in Python 3.7+
 
         if not self._config.exclude_code_structure:
             agent = self._structure_analyzer_agent
-            analysis_files.append(self._config.repo_path / ".ai" / "docs" / "structure_analysis.md")
-            agent_tasks[agent.name] = self._run_agent(
+            file_path = self._config.repo_path / ".ai" / "docs" / "structure_analysis.md"
+            analysis_files.append(file_path)
+            agent_tasks[agent.name] = partial(
+                self._run_agent,
                 agent=agent,
                 user_prompt=self._render_prompt("agents.structure_analyzer.user_prompt"),
-                file_path=self._config.repo_path / ".ai" / "docs" / "structure_analysis.md",
+                file_path=file_path,
             )
 
         if not self._config.exclude_dependencies:
             agent = self._dependency_analyzer_agent
-            analysis_files.append(self._config.repo_path / ".ai" / "docs" / "dependency_analysis.md")
-            agent_tasks[agent.name] = self._run_agent(
+            file_path = self._config.repo_path / ".ai" / "docs" / "dependency_analysis.md"
+            analysis_files.append(file_path)
+            agent_tasks[agent.name] = partial(
+                self._run_agent,
                 agent=agent,
                 user_prompt=self._render_prompt("agents.dependency_analyzer.user_prompt"),
-                file_path=self._config.repo_path / ".ai" / "docs" / "dependency_analysis.md",
+                file_path=file_path,
             )
 
         if not self._config.exclude_data_flow:
             agent = self._data_flow_analyzer_agent
-            analysis_files.append(self._config.repo_path / ".ai" / "docs" / "data_flow_analysis.md")
-            agent_tasks[agent.name] = self._run_agent(
+            file_path = self._config.repo_path / ".ai" / "docs" / "data_flow_analysis.md"
+            analysis_files.append(file_path)
+            agent_tasks[agent.name] = partial(
+                self._run_agent,
                 agent=agent,
                 user_prompt=self._render_prompt("agents.data_flow_analyzer.user_prompt"),
-                file_path=self._config.repo_path / ".ai" / "docs" / "data_flow_analysis.md",
+                file_path=file_path,
             )
 
         if not self._config.exclude_request_flow:
             agent = self._request_flow_analyzer_agent
-            analysis_files.append(self._config.repo_path / ".ai" / "docs" / "request_flow_analysis.md")
-            agent_tasks[agent.name] = self._run_agent(
+            file_path = self._config.repo_path / ".ai" / "docs" / "request_flow_analysis.md"
+            analysis_files.append(file_path)
+            agent_tasks[agent.name] = partial(
+                self._run_agent,
                 agent=agent,
                 user_prompt=self._render_prompt("agents.request_flow_analyzer.user_prompt"),
-                file_path=self._config.repo_path / ".ai" / "docs" / "request_flow_analysis.md",
+                file_path=file_path,
             )
 
         if not self._config.exclude_api_analysis:
             agent = self._api_analyzer_agent
-            analysis_files.append(self._config.repo_path / ".ai" / "docs" / "api_analysis.md")
-            agent_tasks[agent.name] = self._run_agent(
+            file_path = self._config.repo_path / ".ai" / "docs" / "api_analysis.md"
+            analysis_files.append(file_path)
+            agent_tasks[agent.name] = partial(
+                self._run_agent,
                 agent=agent,
                 user_prompt=self._render_prompt("agents.api_analyzer.user_prompt"),
-                file_path=self._config.repo_path / ".ai" / "docs" / "api_analysis.md",
+                file_path=file_path,
             )
 
-        Logger.debug("Running all agents")
+        Logger.debug(f"Running {len(agent_tasks)} agents with worker pool")
 
-        # Run all agents concurrently
-        results = await asyncio.gather(*agent_tasks.values(), return_exceptions=True)
+        # Run all agents concurrently using worker pool
+        worker_pool = WorkerPool(max_workers=self._config.max_workers)
+        results = await worker_pool.run(list(agent_tasks.values()))
 
         Logger.debug("All agents finished")
 
-        # Log results with agent names
+        # Log results with agent names (dict order is preserved)
         for agent_name, result in zip(agent_tasks.keys(), results):
             if isinstance(result, Exception):
                 Logger.error(f"Agent {agent_name} failed: {result}", exc_info=True)
@@ -284,13 +296,13 @@ class AnalyzerAgent:
                 FileReadTool().get_tool(),
                 ListFilesTool().get_tool(),
             ],
-            mcp_servers=[],
             instrument=True,
         )
 
     def _render_prompt(self, prompt_name: str) -> str:
         template_vars = {
             "repo_path": str(self._config.repo_path),
+            "repo_structure": ListFilesTool()._run(str(self._config.repo_path)),
         }
 
         return self._prompt_manager.render_prompt(prompt_name, **template_vars)
