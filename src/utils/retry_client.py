@@ -47,11 +47,10 @@ def create_retrying_client() -> AsyncClient:
             HTTPStatusError: When response has a retryable status code
         """
         # Check for common retryable errors:
-        # 429: Too Many Requests (rate limited)
         # 502: Bad Gateway (server temporarily unavailable)
         # 503: Service Unavailable (server overloaded)
         # 504: Gateway Timeout (server took too long to respond)
-        if response.status_code in (429, 502, 503, 504):
+        if response.status_code in (502, 503, 504):
             response.raise_for_status()  # This will raise HTTPStatusError for retry
 
     # Create the transport layer with retry logic
