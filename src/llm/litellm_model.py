@@ -52,6 +52,7 @@ class LiteLLMModelSettings:
     api_key: str | None = None
     api_version: str | None = None
     drop_params: bool = True  # LiteLLM will drop unsupported params for each provider
+    num_retries: int = 5  # LiteLLM built-in retry support
 
 
 @dataclass
@@ -190,6 +191,7 @@ class LiteLLMModel(Model):
         """Build kwargs for LiteLLM acompletion call."""
         kwargs: dict[str, Any] = {
             "drop_params": self.litellm_settings.drop_params,
+            "num_retries": self.litellm_settings.num_retries,
         }
 
         # Add LiteLLM-specific settings

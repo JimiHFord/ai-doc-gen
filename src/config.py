@@ -103,12 +103,6 @@ FILE_LOG_LEVEL = getattr(logging, os.getenv("FILE_LOG_LEVEL", "INFO").upper())
 TOOL_FILE_READER_MAX_RETRIES = int(os.getenv("TOOL_FILE_READER_MAX_RETRIES", "2"))
 TOOL_LIST_FILES_MAX_RETRIES = int(os.getenv("TOOL_LIST_FILES_MAX_RETRIES", "2"))
 
-# HTTP Retry Client Settings
-HTTP_RETRY_MAX_ATTEMPTS = int(os.getenv("HTTP_RETRY_MAX_ATTEMPTS", "5"))
-HTTP_RETRY_MULTIPLIER = int(os.getenv("HTTP_RETRY_MULTIPLIER", "1"))
-HTTP_RETRY_MAX_WAIT_PER_ATTEMPT = int(os.getenv("HTTP_RETRY_MAX_WAIT_PER_ATTEMPT", "60"))
-HTTP_RETRY_MAX_TOTAL_WAIT = int(os.getenv("HTTP_RETRY_MAX_TOTAL_WAIT", "300"))
-
 # --------------------------
 # Helper Function
 
